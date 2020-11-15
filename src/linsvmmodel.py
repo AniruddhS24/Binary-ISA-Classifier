@@ -1,6 +1,6 @@
 import numpy as np
 from src.dataprocessing import *
-#hello
+
 class SVMMultiClass:
     def __init__(self, gram, tf_idf, pairs, svms, vocab: Indexer, labels: Indexer, train_x, train_y):
         self.gram = gram
