@@ -131,5 +131,4 @@ def train_MLP(datafilename, grams, tf_idf):
             optimizer.step()
         print("Epoch: %d    Loss: %f" % (epoch, total_loss.item()))
 
-    mlpc = MLPClassifier(grams, tf_idf, vocab, labels, train_x_raw, train_y, net=model)
-    return mlpc
+    return MLPClassifier(grams, tf_idf, vocab, labels, train_x_raw, train_y, net=model)

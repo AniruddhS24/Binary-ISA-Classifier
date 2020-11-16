@@ -86,5 +86,4 @@ def train_naive_bayes(datafilename, grams, tf_idf = False):
     # log probabilities are more convenient
     label_based = np.log(label_based)
 
-    nb = NaiveBayesClassifier(grams, tf_idf, vocab, labels, label_based, train_x, train_y)
-    return nb
+    return NaiveBayesClassifier(grams, tf_idf, vocab, labels, label_based, train_x, train_y)

@@ -131,8 +131,9 @@ def train_SVM(datafilename, grams, tf_idf):
                     continue
                 svms[svmidx].update(train_x[perm[i]],y, reg_c, lr)
         lr = lr * (1.0 / (1.0 + decay*epoch)) #decay learning rate
-    svmmc = SVMMultiClass(grams, tf_idf, pairs, svms, vocab, labels, train_x_raw, train_y)
-    return svmmc
+
+    return SVMMultiClass(grams, tf_idf, pairs, svms, vocab, labels, train_x_raw, train_y)
+
 
 # 0.005 1 0.5
 # 0.01 2 0.01

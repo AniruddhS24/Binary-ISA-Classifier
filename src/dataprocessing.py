@@ -136,8 +136,5 @@ def visualize_data(datafile, grams, view_labels, dim):
 if __name__ == '__main__':
     #visualize_data("../data/datafile150.json", [2,3], ['powerpc', 'sh4', 'arm', 'mips'], dim=3)
     vocab, labels, train_x, train_y = read_data_rawcounts('../data/datafile100.json', grams=[2,3])
-    sums = np.sum(train_x,axis=0)
-    idx = (-sums).argsort()[:5]
-    for i in idx:
-        print(vocab.get_object(i))
+    print(len(vocab))
 

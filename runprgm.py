@@ -5,6 +5,7 @@ import time
 import random
 import binascii
 from src.naivebayesmodel import *
+from src.lrmodel import *
 from src.linsvmmodel import *
 from src.mlpmodel import *
 
@@ -59,7 +60,8 @@ if __name__ == "__main__":
     s = Server()
 
     #mymodel = train_naive_bayes("data/datafile100.json", grams=[3], tf_idf=False)
-    mymodel = train_SVM("data/datafile150.json", grams=[2,3], tf_idf=True)
+    mymodel = train_LR("data/datafile150.json", grams=[2,3], tf_idf=True)
+    #mymodel = train_SVM("data/datafile150.json", grams=[2,3], tf_idf=True)
     #mymodel = train_MLP("data/datafile150.json", grams=[3], tf_idf=True)
     for _ in range(2000):
         # query the /challenge endpoint
