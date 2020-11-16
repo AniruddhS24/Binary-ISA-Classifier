@@ -60,7 +60,7 @@ if __name__ == "__main__":
 
     #mymodel = train_naive_bayes("data/datafile100.json", gram=3, tf_idf=False)
     mymodel = train_SVM("data/datafile150.json", gram=3, tf_idf=True)
-    #mymodel = train_MLP("data/datafile100.json", gram=3, tf_idf=True)
+    #mymodel = train_MLP("data/datafile150.json", gram=3, tf_idf=True)
     for _ in range(2000):
         # query the /challenge endpoint
         s.get()

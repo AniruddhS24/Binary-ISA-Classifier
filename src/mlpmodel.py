@@ -3,6 +3,10 @@ import torch
 import torch.nn as nn
 from src.dataprocessing import *
 
+'''
+Multilayer perceptron
+    2-layer neural network to predict class label given binary blob count vector as input
+'''
 class MLP(nn.Module):
     def __init__(self, inp_shape, hid_shape, op_shape):
         super(MLP, self).__init__()
@@ -28,6 +32,9 @@ class MLP(nn.Module):
         x = self.softmx(x)
         return x
 
+'''
+Classifier which outputs prediction from trained neural net
+'''
 class MLPClassifier:
     def __init__(self, gram, tf_idf, vocab: Indexer, labels: Indexer, train_x, train_y, net:MLP):
         self.gram = gram
@@ -37,8 +44,11 @@ class MLPClassifier:
         self.train_x = train_x
         self.train_y = train_y
 
-        self.net = net
+        self.net = net #trained MLP
 
+    '''
+    Convert input binary blob string to BOW representation, applying tf-idf if necessary
+    '''
     def process_input(self, x):
         x_arr = np.zeros(len(self.vocab))
         for i in range(0, len(x) - self.gram + 1):
@@ -50,6 +60,9 @@ class MLPClassifier:
                 x_arr[w] *= np.log(self.train_x.shape[1] / np.sum((self.train_x[:, w] > 0)))
         return x_arr
 
+    '''
+    Predict class as argmax of output probabilities from net
+    '''
     def predict(self, x, targets):
         self.net.eval()
         x = self.process_input(x)
@@ -63,38 +76,59 @@ class MLPClassifier:
                 res = target
         return res
 
+'''
+Helper function for min-max scaling of training data (use if needed)
+'''
 def scale_data(train_x): #minmax scaling probably not good
     mins = np.min(train_x, axis=0)
     maxs = np.max(train_x, axis=0)
     train_x = (train_x - mins)/(maxs-mins)
     return train_x
 
+'''
+Train MLP and return a MLPClassifier model
+'''
 def train_MLP(datafilename, gram, tf_idf):
+    # get data
     if tf_idf:
         vocab, labels, train_x, train_y = read_data_tfidf(datafilename, gram=gram)
     else:
         vocab, labels, train_x, train_y = read_data_rawcounts(datafilename, gram=gram)
 
+    # scale data and convert numpy arrays to type float32 (needed for training)
     train_x = scale_data(train_x)
     train_x = train_x.astype(np.float32)
     train_y = train_y.astype(np.float32)
+
+    # define untrained model
     model = MLP(train_x.shape[1], 64, train_y.shape[1])
+
+    # hyperparameters
     EPOCHS = 20
     batch_size = 10
-    lr = 0.001
+    lr = 0.002
 
+    # our optimizer is Adam
     optimizer = torch.optim.Adam(params=model.parameters(), lr = lr)
+
+    # choose loss function as negative log-likelihood loss
     criterion = nn.NLLLoss()
-    model.train() #set to training mode
+
+    # training
+    model.train()
     for epoch in range(EPOCHS):
-        perm = torch.randperm(train_x.shape[0])
+        perm = torch.randperm(train_x.shape[0]) #shuffle examples
         total_loss = 0.0
         for i in range(0, train_x.shape[0], batch_size):
             optimizer.zero_grad()
+            # get prediction
             pred = model.forward(torch.from_numpy(train_x[perm[i:i+batch_size], :]))
+            # compute loss
             loss = criterion(pred, torch.argmax(torch.from_numpy(train_y[perm[i:i+batch_size], :]), dim=1))
             total_loss += loss*batch_size
+            # backpropagate to compute gradients
             loss.backward()
+            # update model weights
             optimizer.step()
         print("Epoch: %d    Loss: %f" % (epoch, total_loss.item()))
 
