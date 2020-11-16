@@ -7,8 +7,8 @@ NB Classifier
     class probabilities. Receives binary blob count vector as input and calculates P(class | input blob)
 '''
 class NaiveBayesClassifier:
-    def __init__(self, gram, tf_idf, vocab:Indexer, labels:Indexer, probs, train_x, train_y):
-        self.gram = gram
+    def __init__(self, grams, tf_idf, vocab:Indexer, labels:Indexer, probs, train_x, train_y):
+        self.grams = grams
         self.tf_idf = tf_idf
         self.vocab = vocab
         self.labels = labels
@@ -21,13 +21,12 @@ class NaiveBayesClassifier:
     '''
     def process_input(self, x):
         x_arr = np.zeros(len(self.vocab))
-        for i in range(0, len(x) - self.gram + 1):
-            if (self.vocab.contains(x[i:i + self.gram])):
-                x_arr[self.vocab.index_of(x[i:i + self.gram])] += 1
+        for gram in self.grams:
+            for i in range(0, len(x) - gram + 1):
+                if (self.vocab.contains(x[i:i + gram])):
+                    x_arr[self.vocab.index_of(x[i:i + gram])] += 1
         if self.tf_idf:
-            x_arr /= np.sum(x_arr)
-            for w in range(len(x_arr)):
-                x_arr[w] *= np.log(self.train_x.shape[1] / np.sum((self.train_x[:, w] > 0)))
+            apply_tfidf(x_arr, self.train_x)
         return x_arr
 
     '''
@@ -66,12 +65,9 @@ Not really a training procedure, but computes probability matrix P(t_i | class) 
 Note that
     P(t_i | class) = occurrences of t_i in examples labeled class/ total occurrences of t_i
 '''
-def train_naive_bayes(datafilename, gram, tf_idf = False):
+def train_naive_bayes(datafilename, grams, tf_idf = False):
     # get data
-    if tf_idf:
-        vocab, labels, train_x, train_y = read_data_tfidf(datafilename, gram=gram)
-    else:
-        vocab, labels, train_x, train_y = read_data_rawcounts(datafilename, gram=gram)
+    vocab, labels, train_x, train_y = read_data_rawcounts(datafilename, grams=grams)
 
     # label_based is a numpy array where label_based[t_i][class] = P(t_i | class)
     label_based = np.zeros(shape=(len(labels), train_x.shape[1]))
@@ -90,5 +86,5 @@ def train_naive_bayes(datafilename, gram, tf_idf = False):
     # log probabilities are more convenient
     label_based = np.log(label_based)
 
-    nb = NaiveBayesClassifier(gram, tf_idf, vocab, labels, label_based, train_x, train_y)
+    nb = NaiveBayesClassifier(grams, tf_idf, vocab, labels, label_based, train_x, train_y)
     return nb

@@ -8,8 +8,8 @@ to use one vs. all here because SVMs don't produce probabilities. However, despi
 12c2 = 66 SVMs this approach seemed to work alright, though I'm sure better alternatives exist.
 '''
 class SVMMultiClass:
-    def __init__(self, gram, tf_idf, pairs, svms, vocab: Indexer, labels: Indexer, train_x, train_y):
-        self.gram = gram
+    def __init__(self, grams, tf_idf, pairs, svms, vocab: Indexer, labels: Indexer, train_x, train_y):
+        self.grams = grams
         self.tf_idf = tf_idf
         self.pairs = pairs #list of 12c2 class pairs (i.e. [mipsel, sh4] ) which correspond to each SVM
         self.svms = svms #list of SVM models
@@ -23,14 +23,12 @@ class SVMMultiClass:
     '''
     def process_input(self, x):
         x_arr = np.zeros(len(self.vocab))
-        for i in range(0, len(x) - self.gram + 1):
-            if (self.vocab.contains(x[i:i + self.gram])):
-                x_arr[self.vocab.index_of(x[i:i + self.gram])] += 1
+        for gram in self.grams:
+            for i in range(0, len(x) - gram + 1):
+                if (self.vocab.contains(x[i:i + gram])):
+                    x_arr[self.vocab.index_of(x[i:i + gram])] += 1
         if self.tf_idf:
-            x_arr /= np.sum(x_arr)
-            for w in range(len(x_arr)):
-                if np.sum((self.train_x[:, w] > 0)) > 0:
-                    x_arr[w] *= np.log(self.train_x.shape[1] / np.sum((self.train_x[:, w] > 0)))
+            apply_tfidf(x_arr, self.train_x)
         return x_arr
 
     '''
@@ -42,14 +40,14 @@ class SVMMultiClass:
         votes = np.zeros(len(self.labels))
         for i in range(len(self.svms)):
             pd = self.svms[i].predict(x)
-            votes[self.pairs[i][pd]]+=1 #increment votes for this prediction
+            votes[self.pairs[i][pd]]+=1 # increment votes for this prediction
 
         maxvotes = 0
         res = targets[0]
         for target in targets:
             if votes[self.labels.index_of(target)] > maxvotes:
                 maxvotes = votes[self.labels.index_of(target)]
-                res = target #choose target with maximum votes
+                res = target # choose target with maximum votes
 
         return res
 
@@ -65,16 +63,16 @@ class SVM:
     '''
     Routine to update weights while training. L2 regularization is used.
     '''
-    def update(self, x, y, reg_c, reg_lambda, lr):
+    def update(self, x, y, reg_c, lr):
         z = np.dot(self.w,x) - self.b
 
         # hinge loss is 0, gradient only involves regularization term
         if y*z >= 1:
-            grads = 2*reg_lambda*self.w
+            grads = self.w
             self.w -= lr*grads #update weights
         # hinge loss nonzero
         else:
-            grads = -reg_c*y*x + 2*reg_lambda*self.w
+            grads = -reg_c*y*x + self.w
             self.w -= lr*grads #update weights
             self.b -= lr*y
 
@@ -100,12 +98,13 @@ def scale_data(train_x):
 '''
 Train 12c2 SVMs and return an SVMMulticlass model.
 '''
-def train_SVM(datafilename, gram, tf_idf):
+def train_SVM(datafilename, grams, tf_idf):
     # get data
+    vocab, labels, train_x_raw, train_y = read_data_rawcounts(datafilename, grams=grams)
+    train_x = np.copy(train_x_raw)
     if tf_idf:
-        vocab, labels, train_x, train_y = read_data_tfidf(datafilename, gram=gram)
-    else:
-        vocab, labels, train_x, train_y = read_data_rawcounts(datafilename, gram=gram)
+        apply_tfidf(train_x, train_x_raw)
+
 
     # generate 12c2 pairs of classes, and initialize array of untrained SVMs
     x = [i for i in range(len(labels))]
@@ -113,11 +112,10 @@ def train_SVM(datafilename, gram, tf_idf):
     svms = [SVM(len(vocab)) for _ in range(len(pairs))]
 
     # hyperparameters
-    EPOCHS = 7
-    lr = 0.01
-    decay = 0.001
-    reg_c = 10 # C regularization factor for SVM margin, large C penalizes incorrectly classified examples
-    reg_lambda = 0.5 # L2 regularization, set at 0.5
+    EPOCHS = 8
+    lr = 0.0002
+    decay = 0.0001
+    reg_c = 500 # C regularization factor for SVM margin, large C penalizes incorrectly classified examples
 
     # training
     for epoch in range(EPOCHS):
@@ -131,11 +129,12 @@ def train_SVM(datafilename, gram, tf_idf):
                     y = 1
                 else:
                     continue
-                svms[svmidx].update(train_x[perm[i]],y, reg_c, reg_lambda, lr)
+                svms[svmidx].update(train_x[perm[i]],y, reg_c, lr)
         lr = lr * (1.0 / (1.0 + decay*epoch)) #decay learning rate
-    svmmc = SVMMultiClass(gram, tf_idf, pairs, svms, vocab, labels, train_x, train_y)
+    svmmc = SVMMultiClass(grams, tf_idf, pairs, svms, vocab, labels, train_x_raw, train_y)
     return svmmc
 
 # 0.005 1 0.5
 # 0.01 2 0.01
 # 7 0.02 10 0.01
+# 7 0.01 dec = 0.001 regc = 10 reglamb = 0.01

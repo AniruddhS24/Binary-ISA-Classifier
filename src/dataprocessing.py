@@ -42,7 +42,7 @@ we can adapt a simple bag-of-words representation which is simply an array of
 counts/frequencies for each word. Also takes a gram parameter which denotes 
 the length of individual 'tokens' or words we split our binary blob into
 '''
-def read_data_rawcounts(filename, gram):
+def read_data_rawcounts(filename, grams):
     with open(filename) as f:
         data_text = json.load(f)
 
@@ -50,24 +50,26 @@ def read_data_rawcounts(filename, gram):
     vocab = Indexer()
     labels = Indexer()
     for datapoint in data_text:
-        for ci in range(0, len(datapoint[0])-gram+1):
-            vocab.add_and_get_index(str(datapoint[0][ci:ci+gram])) #add word to vocabulary
-            labels.add_and_get_index(datapoint[1]) #add to labels if not present
+        for gram in grams:
+            for ci in range(0, len(datapoint[0])-gram+1):
+                vocab.add_and_get_index(str(datapoint[0][ci:ci+gram])) #add word to vocabulary
+                labels.add_and_get_index(datapoint[1]) #add to labels if not present
 
     #define numpy arrays for training data
     train_x = np.zeros(shape=(len(data_text), len(vocab)))
     train_y = np.zeros(shape=(len(data_text), len(labels)))
 
     for i in range(len(data_text)):
-        for ci in range(0, len(data_text[i][0])-gram+1):
-            train_x[i][vocab.index_of(data_text[i][0][ci:ci+gram])] += 1 #bag-of-words counts
+        for gram in grams:
+            for ci in range(0, len(data_text[i][0])-gram+1):
+                train_x[i][vocab.index_of(data_text[i][0][ci:ci+gram])] += 1 #bag-of-words counts
     for i in range(len(data_text)):
         train_y[i][labels.index_of(data_text[i][1])] = 1 #one-hot encoding
 
     return vocab, labels, train_x, train_y
 
 '''
-Reads data as raw counts but also applies tf-idf weighting. Applying tf-idf can
+Applies tf-idf weighting to arr. Applying tf-idf can
 be advantageous as it normalizes our raw counts and also assigns smaller weight 
 to common terms, thereby giving rare/special terms more weight. I calculated it
 as follows:
@@ -89,20 +91,22 @@ all documents, so the tf-idf weight for "the" will be low, as desired. Similarly
 to assign higher weight to more rare tokens in our binary blob that can help predict the target
 architecture
 '''
-def read_data_tfidf(filename, gram):
-    vocab, labels, train_x, train_y = read_data_rawcounts(filename, gram)
-    for i in range(train_x.shape[0]): #tf
-        train_x[i] /= np.sum(train_x[i])
-    for w in range(train_x.shape[1]): #idf
-        train_x[:,w] *= np.log(train_x.shape[1]/np.sum((train_x[:,w] > 0)))
-    return vocab, labels, train_x, train_y
+def apply_tfidf(arr, train_x):
+    if len(arr.shape)==1:
+        arr = np.expand_dims(arr, axis=0)
+    for i in range(arr.shape[0]):
+        arr[i] /= np.sum(arr[i])
+    for w in range(arr.shape[1]):
+        arr[:, w] *= np.log(train_x.shape[1] / np.sum((train_x[:, w] > 0)))
+    return arr.squeeze()
 
 '''
 This function is simply used to visualize our data for a set of labels. Scales data and then
 applies PCA to 1 or 2 dimensions, and plots datapoints. PCA is a method by which 
 '''
-def visualize_data(datafile, gram, view_labels, dim):
-    vocab, labels, train_x, train_y = read_data_tfidf(datafile, gram)
+def visualize_data(datafile, grams, view_labels, dim):
+    vocab, labels, train_x, train_y = read_data_rawcounts(datafile, grams)
+    apply_tfidf(train_x, train_x)
     train_x = StandardScaler().fit_transform(train_x)
     if dim==2:
         pca = PCA(n_components=2)
@@ -130,5 +134,10 @@ def visualize_data(datafile, gram, view_labels, dim):
 
 
 if __name__ == '__main__':
-    visualize_data("../data/datafile150.json", 3, ['sparc', 'xtensa', 'powerpc', 'sh4', 'arm'], dim=3)
+    #visualize_data("../data/datafile150.json", [2,3], ['powerpc', 'sh4', 'arm', 'mips'], dim=3)
+    vocab, labels, train_x, train_y = read_data_rawcounts('../data/datafile100.json', grams=[2,3])
+    sums = np.sum(train_x,axis=0)
+    idx = (-sums).argsort()[:5]
+    for i in idx:
+        print(vocab.get_object(i))
 

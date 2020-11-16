@@ -36,8 +36,8 @@ class MLP(nn.Module):
 Classifier which outputs prediction from trained neural net
 '''
 class MLPClassifier:
-    def __init__(self, gram, tf_idf, vocab: Indexer, labels: Indexer, train_x, train_y, net:MLP):
-        self.gram = gram
+    def __init__(self, grams, tf_idf, vocab: Indexer, labels: Indexer, train_x, train_y, net:MLP):
+        self.grams = grams
         self.tf_idf = tf_idf
         self.vocab = vocab
         self.labels = labels
@@ -51,13 +51,12 @@ class MLPClassifier:
     '''
     def process_input(self, x):
         x_arr = np.zeros(len(self.vocab))
-        for i in range(0, len(x) - self.gram + 1):
-            if (self.vocab.contains(x[i:i + self.gram])):
-                x_arr[self.vocab.index_of(x[i:i + self.gram])] += 1
+        for gram in self.grams:
+            for i in range(0, len(x) - gram + 1):
+                if (self.vocab.contains(x[i:i + gram])):
+                    x_arr[self.vocab.index_of(x[i:i + gram])] += 1
         if self.tf_idf:
-            x_arr /= np.sum(x_arr)
-            for w in range(len(x_arr)):
-                x_arr[w] *= np.log(self.train_x.shape[1] / np.sum((self.train_x[:, w] > 0)))
+            apply_tfidf(x_arr, self.train_x)
         return x_arr
 
     '''
@@ -88,12 +87,12 @@ def scale_data(train_x): #minmax scaling probably not good
 '''
 Train MLP and return a MLPClassifier model
 '''
-def train_MLP(datafilename, gram, tf_idf):
+def train_MLP(datafilename, grams, tf_idf):
     # get data
+    vocab, labels, train_x_raw, train_y = read_data_rawcounts(datafilename, grams=grams)
+    train_x = np.copy(train_x_raw)
     if tf_idf:
-        vocab, labels, train_x, train_y = read_data_tfidf(datafilename, gram=gram)
-    else:
-        vocab, labels, train_x, train_y = read_data_rawcounts(datafilename, gram=gram)
+        apply_tfidf(train_x, train_x_raw)
 
     # scale data and convert numpy arrays to type float32 (needed for training)
     train_x = scale_data(train_x)
@@ -132,5 +131,5 @@ def train_MLP(datafilename, gram, tf_idf):
             optimizer.step()
         print("Epoch: %d    Loss: %f" % (epoch, total_loss.item()))
 
-    mlpc = MLPClassifier(gram, tf_idf, vocab, labels, train_x, train_y, net=model)
+    mlpc = MLPClassifier(grams, tf_idf, vocab, labels, train_x_raw, train_y, net=model)
     return mlpc
