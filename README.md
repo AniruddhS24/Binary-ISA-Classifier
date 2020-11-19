@@ -56,7 +56,7 @@ more representative of the target architecture will ideally receive higher tf-id
 However, even after this, we are likely to end up with very sparse BOW vectors as the vocabulary size
 is very large (~4500 words) in contrast with each training example.
 
-Although there are more ways to further process the data, the transformations outlined above seemed to produce good
+Although there are more ways to further process the data (i.e. clip low frequency words), the transformations outlined above seemed to produce good
 representations for the models.
 
 ## Models
