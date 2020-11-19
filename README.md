@@ -1,4 +1,4 @@
-# PraetorianML
+# Praetorian MLB Challenge
 
 This is my attempt for the Praetorian Machine Learning Binaries (MLB) challenge. Here,
 I will briefly describe my approach and choice of models. While ML concepts will be 
