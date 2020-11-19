@@ -79,14 +79,18 @@ First, I tried implementing a one vs. all logistic regression classifier, and th
 Linear SVMs are also suitable for text classification tasks, so I tried to implement one for this. An SVM, or support
 vector machine, is a supervised learning model that tries to separate data with a maximal margin. Unlike logistic
 regression which finds some decently optimal decision boundary, SVMs strive to find the hyperplane that maximizes
-the distance (or margin) between the nearest two training examples. I hoped to perhaps receive better results with this,
-but the linear SVM sadly had no significant performance boosts.
+the distance (or margin) between the nearest two training examples. After tuning hyperparameters for both models,
+the linear SVM did provide slightly better results than LR, but it wasn't a huge improvement.
 
 ### MLP
 
 The final approach I tried was using a neural network. I implemented a standard feedforward network with 2 hidden layers.
-The input layer took the BOW representation (potentially with tfidf weighting applied) and the output layer
+The input layer took the BOW representation (potentially with tf-idf weighting applied) and the output layer
 produced softmax probabilities across the 12 ISA classes. For this model, I used PyTorch instead of low-level
 machine learning primitives as implementing backprop manually would have been a bit messy, and I had already 
-found the NB Classifier and SVM to produce good results. However, I commented on every aspect of the implementation,
-so please consult ```src\mlpmodel.py``` for further details.
+found the NB Classifier and SVM to produce good results. However, I commented on all aspects of the implementation,
+so please consult ```src\mlpmodel.py``` for further details. Note that this network doesn't perform 
+very well, partially because of extremely sparse input tensors given by the short binary blobs and large vocabulary
+sizes. I also did not optimize this model very well as the SVM and NB model were more favorable in this task.
+
+

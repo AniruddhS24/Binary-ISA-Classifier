@@ -98,7 +98,7 @@ def scale_data(train_x):
 '''
 Train 12c2 SVMs and return an SVMMulticlass model.
 '''
-def train_SVM(datafilename, grams, tf_idf):
+def train_SVM(datafilename, grams, tf_idf, EPOCHS = 8, lr = 0.001, decay = 0.0001, reg_c = 1000):
     # get data
     vocab, labels, train_x_raw, train_y = read_data_rawcounts(datafilename, grams=grams)
     train_x = np.copy(train_x_raw)
@@ -111,11 +111,6 @@ def train_SVM(datafilename, grams, tf_idf):
     pairs = np.transpose([np.tile(x, len(x)), np.repeat(x, len(x))])
     svms = [SVM(len(vocab)) for _ in range(len(pairs))]
 
-    # hyperparameters
-    EPOCHS = 8
-    lr = 0.0002
-    decay = 0.0001
-    reg_c = 500 # C regularization factor for SVM margin, large C penalizes incorrectly classified examples
 
     # training
     for epoch in range(EPOCHS):
@@ -134,8 +129,29 @@ def train_SVM(datafilename, grams, tf_idf):
 
     return SVMMultiClass(grams, tf_idf, pairs, svms, vocab, labels, train_x_raw, train_y)
 
+# hyperparameter tuning
+if __name__ == '__main__':
+    params = dict()
+    params['epochs'] = [5, 7, 12]
+    params['lr'] = [0.0001, 0.001, 0.01]
+    params['reg_c'] = [0.5, 10, 500, 1000]
 
-# 0.005 1 0.5
-# 0.01 2 0.01
-# 7 0.02 10 0.01
-# 7 0.01 dec = 0.001 regc = 10 reglamb = 0.01
+    with open('../data/datafile20.json') as f:
+        dev_set = json.load(f)
+
+
+    for epoch in params['epochs']:
+        for lr in params['lr']:
+            for reg_c in params['reg_c']:
+                avg_acc = 0.0
+                for i in range(3):
+                    model = train_SVM('../data/datafile150.json', grams=[2,3], tf_idf=True,
+                                     EPOCHS = epoch, lr = lr, reg_c = reg_c)
+                    num_correct = 0
+                    for datapoint in dev_set:
+                        if model.predict(datapoint[0], list(model.labels.objs_to_ints.keys())) == datapoint[1]:
+                            num_correct += 1
+                    avg_acc += num_correct/len(dev_set)
+                print("epochs %d    lr %f     reg_c %f       accuracy %f" % (epoch, lr, reg_c, avg_acc/3))
+
+#lr = 0.001 and regc = 1000 works well, train for 7 epochs

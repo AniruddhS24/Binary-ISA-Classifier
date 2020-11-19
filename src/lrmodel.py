@@ -84,7 +84,7 @@ def scale_data(train_x):
 '''
 Train 12 LR classifiers, each of which is trained to predict one of the 12 ISA architectures vs. other architectures.
 '''
-def train_LR(datafilename, grams, tf_idf):
+def train_LR(datafilename, grams, tf_idf, EPOCHS = 12, lr = 0.01, decay = 0.0001, reg_lambda = 0):
     # get data
     vocab, labels, train_x_raw, train_y = read_data_rawcounts(datafilename, grams=grams)
     train_x = np.copy(train_x_raw)
@@ -92,12 +92,6 @@ def train_LR(datafilename, grams, tf_idf):
         apply_tfidf(train_x, train_x_raw)
 
     lrs = [LR(len(vocab)) for _ in range(len(labels))]
-
-    # hyperparameters
-    EPOCHS = 10
-    lr = 0.1
-    decay = 0.0001
-    reg_lambda = 0
 
     # training
     for epoch in range(EPOCHS):
@@ -112,3 +106,26 @@ def train_LR(datafilename, grams, tf_idf):
         lr = lr * (1.0 / (1.0 + decay * epoch))  # decay learning rate
 
     return LRClassifier(grams, tf_idf, lrs, vocab, labels, train_x_raw, train_y)
+
+# hyperparameter tuning
+if __name__ == '__main__':
+    params = dict()
+    params['epochs'] = [5, 7, 12]
+    params['lr'] = [0.0001, 0.001, 0.01, 0.1]
+    params['reg_lambda'] = [0, 0.0001, 0.5, 2]
+
+    with open('../data/datafile20.json') as f:
+        dev_set = json.load(f)
+
+
+    for epoch in params['epochs']:
+        for lr in params['lr']:
+            for reg_lambda in params['reg_lambda']:
+                model = train_LR('../data/datafile150.json', grams=[2,3], tf_idf=True,
+                                 EPOCHS = epoch, lr = lr, reg_lambda = reg_lambda)
+                num_correct = 0
+                for datapoint in dev_set:
+                    if model.predict(datapoint[0], model.labels.objs_to_ints.keys()) == datapoint[1]:
+                        num_correct += 1
+                acc = num_correct/len(dev_set)
+                print("epochs %d    lr %f     reg_lambda %f       accuracy %f" % (epoch, lr, reg_lambda, acc))

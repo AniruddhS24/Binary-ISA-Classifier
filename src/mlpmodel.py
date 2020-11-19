@@ -87,7 +87,7 @@ def scale_data(train_x): #minmax scaling probably not good
 '''
 Train MLP and return a MLPClassifier model
 '''
-def train_MLP(datafilename, grams, tf_idf):
+def train_MLP(datafilename, grams, tf_idf, EPOCHS = 8, lr = 0.001, batch_size = 10, hid_size = 128):
     # get data
     vocab, labels, train_x_raw, train_y = read_data_rawcounts(datafilename, grams=grams)
     train_x = np.copy(train_x_raw)
@@ -100,12 +100,7 @@ def train_MLP(datafilename, grams, tf_idf):
     train_y = train_y.astype(np.float32)
 
     # define untrained model
-    model = MLP(train_x.shape[1], 64, train_y.shape[1])
-
-    # hyperparameters
-    EPOCHS = 20
-    batch_size = 10
-    lr = 0.002
+    model = MLP(train_x.shape[1], hid_size, train_y.shape[1])
 
     # our optimizer is Adam
     optimizer = torch.optim.Adam(params=model.parameters(), lr = lr)
@@ -132,3 +127,28 @@ def train_MLP(datafilename, grams, tf_idf):
         print("Epoch: %d    Loss: %f" % (epoch, total_loss.item()))
 
     return MLPClassifier(grams, tf_idf, vocab, labels, train_x_raw, train_y, net=model)
+
+# hyperparameter tuning
+if __name__ == '__main__':
+    params = dict()
+    params['epochs'] = [7, 12, 15]
+    params['lr'] = [0.0001, 0.001, 0.01]
+    params['hid_size'] = [24, 64, 128, 512]
+
+    with open('../data/datafile20.json') as f:
+        dev_set = json.load(f)
+
+
+    for epoch in params['epochs']:
+        for lr in params['lr']:
+            for hs in params['hid_size']:
+                avg_acc = 0.0
+                for i in range(3):
+                    model = train_MLP('../data/datafile150.json', grams=[2,3], tf_idf=True,
+                                     EPOCHS = epoch, lr = lr, hid_size = hs)
+                    num_correct = 0
+                    for datapoint in dev_set:
+                        if model.predict(datapoint[0], list(model.labels.objs_to_ints.keys())) == datapoint[1]:
+                            num_correct += 1
+                    avg_acc += num_correct/len(dev_set)
+                print("epochs %d    lr %f     hs %f       accuracy %f" % (epoch, lr, hs, avg_acc/3))
