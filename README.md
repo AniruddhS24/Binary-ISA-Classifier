@@ -5,6 +5,9 @@ I will briefly describe my approach and choice of models. While ML concepts will
 discussed here, please consult the code to see comments/documentation about specific
 implementation and design choices. 
 
+You can run the classifier and select a model in ```runprgm.py```. The models and
+data processing routines are in ```src```, and the training data files are in ```data```.
+
 ## Understanding the Task
 
 The task at hand is: given a random binary blob, predict its instruction set architecture
@@ -18,7 +21,10 @@ All data processing routines can be found in ```src/dataprocessing.py``` where I
 datasets, process input, and visualize data. 
 
 Using the server, we can build our dataset by simply querying for random binary blobs to use as 
-training examples. Since we can access the target architecture, we now have a fully labeled dataset.
+training examples. These files are stored in ```data\datafile<num_samples>.json``` where
+```num_samples``` denotes the number of training examples for each of the 12 classes.
+ 
+Since we also have access to the target architecture, we now have a fully labeled dataset.
 Now, each training example is a (binary blob, target architecture) pair.
 Moreover, to keep our data balanced with respect to the 12 classes, we generate an equal number of 
 training examples from each class.
