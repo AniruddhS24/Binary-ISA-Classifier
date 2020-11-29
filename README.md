@@ -86,7 +86,7 @@ Linear SVMs are also suitable for text classification tasks, so I tried to imple
 vector machine, is a supervised learning model that tries to separate data with a maximal margin. Unlike logistic
 regression which finds some decently optimal decision boundary, SVMs strive to find the hyperplane that maximizes
 the distance (or margin) between the nearest two training examples. After tuning hyperparameters for both models,
-the linear SVM did provide slightly better results than LR, but it wasn't a huge improvement.
+the linear SVM did provide slightly better results than LR.
 
 ### MLP
 
