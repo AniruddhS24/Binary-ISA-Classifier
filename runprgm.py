@@ -41,6 +41,11 @@ class Server(object):
                 self.log.info('Waiting 60 seconds before next request')
                 time.sleep(60)
 
+    def get_hash(self):
+        r = self._request("/hash", method="post", data={"email":'aniruddh.sriram@utexas.edu'})
+        hash = r.get('hash', None)
+        return hash
+
     def get(self):
         r = self._request("/challenge")
         self.targets = r.get('target', [])
@@ -59,10 +64,12 @@ if __name__ == "__main__":
     # create the server object
     s = Server()
 
+    # choose model here
     mymodel = train_naive_bayes("data/datafile150.json", grams=[2,3], tf_idf=False)
     #mymodel = train_LR("data/datafile150.json", grams=[2,3], tf_idf=True)
     #mymodel = train_SVM("data/datafile150.json", grams=[2,3], tf_idf=True)
     #mymodel = train_MLP("data/datafile150.json", grams=[2,3], tf_idf=True)
+
     for _ in range(2000):
         # query the /challenge endpoint
         s.get()
@@ -73,8 +80,10 @@ if __name__ == "__main__":
         s.log.info("Guess:[{: >9}]   Answer:[{: >9}]   Wins:[{: >3}]".format(target, s.ans, s.wins))
         # 500 consecutive correct answers are required to win
         if s.hash:
-            with open('hashes.txt', 'w+') as f:
-                f.write(s.hash)
-            s.log.info("You win! {}".format(s.hash))
+            hashvalue = s.get_hash()
+            with open('hashes.txt', "a") as f:
+                f.write(hashvalue + '\n')
+            s.log.info("You win! {}".format(hashvalue))
+            break
 
     s.session.close()
