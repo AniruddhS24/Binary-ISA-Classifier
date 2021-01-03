@@ -47,8 +47,6 @@ However, storing raw counts poses an issue - upon examining the distribution of 
 yet they are assigned a high raw count value, so the model perceives them as important. To fix this, a common NLP 
 technique is to use tf-idf weighting. 
 
-![equation](https://latex.codecogs.com/gif.latex?tf%28t%2Cd%29%20%3D%20count%28t%2C%20d%29/%5Csum_%7Bt%27%20%5Cin%20d%7D%20count%28t%27%2C%20d%29%5C%5C%20idf%28t%2C%20D%29%20%3D%20%5Clog%7B%5Cfrac%7BN%7D%7B%7Cd%20%5Cin%20D%20%3A%20t%20%5Cin%20d%7C%7D%7D%20%5C%5C%20%5C%5C%20tfidf%28t%2C%20d%2C%20D%29%20%3D%20tf%28t%2Cd%29%20%5Ccdot%20idf%28t%2C%20D%29%20%5C%5C%20%5C%5C%20%5Ctext%7Bwhere%20%7D%20t%20%5Ctext%7B%20is%20a%20hex%20chunk%7D%2C%20d%20%5Ctext%7B%20is%20a%20binary%20blob%2C%20and%20%7D%20D%20%5Ctext%7B%20is%20the%20set%20of%20training%20examples%7D)
-
 While the term frequency may be high for '00', the idf score will be low, causing its tf-idf weight to be low.
 By applying this weight, stop words/common hex chunks will receive low tf-idf scores, and hex chunks which are
 more representative of the target architecture will ideally receive higher tf-idf scores.
@@ -65,11 +63,9 @@ Here are the models I tried, and the intuition/concept outlines for each one.
 First, I tried using a Naive Bayes classifier, and it performed remarkably well! NB Classifiers are commonly used
 in text classification tasks, and it was even more preferable here since we were dealing with small 2 to 3 character
 hex chunks as opposed to actual words. Given a tokenized BOW representation of a binary blob, we can produce 
-probabilities across the 12 classes by applying Bayes theorem as follows:
+probabilities across the 12 classes by applying Bayes theorem.
 
-![equation](https://latex.codecogs.com/gif.latex?x%20%3D%20%28t_1%2C%20t_2%2C%20%5Cdots%20t_m%29%20%5Ctext%7B%20where%20%7D%20%7Cx%7C%20%3D%20%5Ctext%7Bvocab%20size%7D%20%5C%5C%20%5C%5C%20%5Ctext%7BFor%20some%20class%20%7D%20c%2C%20%5C%5C%20%5C%5C%20P%28c%20%7C%20x%29%20%3D%20%5Cfrac%7BP%28c%29%20%5Ccdot%20P%28x%7Cc%29%7D%7BP%28x%29%7D%20%5C%5C%20%5C%5C%20%5Ctext%7Bwhere%20%7D%20P%28x%29%20%3D%20P%28t_1%2C%20t_2%2C%20%5Cdots%20t_m%29%20%5C%5C%20%5C%5C%20%5Ctext%7BAssuming%20these%20hex%20chunks%20%7D%20t_i%20%5Ctext%7B%20are%20mutually%20independent%2C%20the%20joint%20probability%20becomes%7D%20%5C%5C%20%5C%5C%20P%28x%7Cc%29%20%3D%20P%28t_1%20%7C%20c%29%20%5Ccdot%20P%28t_2%20%7C%20c%29%20%5Cdots%20P%28t_m%20%7C%20c%29%5C%5C%20%5C%5C%20%5Ctext%7BAcross%20all%20classes%2C%20the%20denominator%20%7D%20P%28x%29%20%5Ctext%7B%20is%20the%20same.%20Therefore%2C%20%7D%5C%5C%20%5C%5C%20%5Chat%7By%7D%20%3D%20%5Cmax_%7Bc%20%5Cin%20C%7D%20P%28c%29%20%5Cprod_%7Bi%3D1%7D%5E%7Bm%7D%20P%28t_i%20%7C%20c%29) 
-
-Note that the independence assumption made is a brave one - however, despite that, a NB classifier seems to 
+Note that an independence assumption is made - despite that, however, a NB classifier seems to 
 produce good results for this task probably because the blobs aren't as semantically complex as English language, 
 and the data is probably clustered nicely.
 
