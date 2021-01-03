@@ -1,9 +1,7 @@
-# Praetorian MLB Challenge
+# Binary ISA Classifier
 
 This is my attempt for the Praetorian Machine Learning Binaries (MLB) challenge. Here,
-I will briefly describe my approach and choice of models. While ML concepts will be 
-discussed here, please consult the code to see comments/documentation about specific
-implementation and design choices. 
+I will briefly describe my approach and choice of models.
 
 You can run the classifier and select a model in ```runprgm.py```. The models and
 data processing routines are in ```src```, and the training data files are in ```data```.
